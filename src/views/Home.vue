@@ -1,18 +1,28 @@
 <template>
-  <div class="home">
-    <img alt="Vue logo" src="../assets/logo.png">
-    <HelloWorld msg="Welcome to Your Vue.js App"/>
+  <div id="home-container">
+
   </div>
 </template>
 
 <script>
-// @ is an alias to /src
-import HelloWorld from '@/components/HelloWorld.vue'
+import Konva from 'konva';
 
 export default {
-  name: 'home',
-  components: {
-    HelloWorld
+  name: "home",
+  mounted() {
+    var width = window.innerWidth;
+    var height = window.innerHeight;
+
+    var stage = new Konva.Stage({
+      container: "home-container",
+      width: width,
+      height: height
+    });
+    var shapesLayer = new Konva.Layer();
+    var blockGroup = new Konva.Group();
+
+    shapesLayer.add(blockGroup);
+    stage.add(shapesLayer);
   }
-}
+};
 </script>
