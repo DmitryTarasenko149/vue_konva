@@ -21,7 +21,9 @@ export default {
     return {
       groupsList: [],
       shapesLayer: {},
-      checked: false
+      checked: false,
+      mutualGroupX: 0,
+      mutualGroupY: 0
     };
   },
   mounted() {
@@ -34,6 +36,10 @@ export default {
       height: height
     });
 
+    stage.on('click', e => {
+      console.log(e.target, 'value')
+    })
+
     var shapesLayer = new Konva.Layer();
     var groupsLayer = new Konva.Layer();
     var rectGroup = new Konva.Group({
@@ -45,7 +51,10 @@ export default {
     var circleGroup = new Konva.Group({
       draggable: true,
       isGroup: false,
-      name: "circleGroup"
+      name: "circleGroup",
+      dragBoundFunc: (pos) => {
+        return pos;
+      }
     });
 
     var mutualGroup = new Konva.Group({
@@ -119,20 +128,16 @@ export default {
       if (!this.checked) return;
       let group = event.target.parent;
       group.draggable(false);
-      console.log(group, "rect");
+      console.log(group.attrs, "rect");
       group.remove();
       mutualGroup.add(group);
       this.groupsList.push(group);
     });
 
-    // rectGroup.on('xChange', (event) => {
-    //   console.log(event, 'event')
-    // });
-
     circleGroup.on("click", event => {
       if (!this.checked) return;
       let group = event.target.parent;
-      console.log(group, "circ");
+      console.log(group.attrs, "circ");
       group.draggable(false);
       group.remove();
       mutualGroup.add(group);
@@ -140,16 +145,54 @@ export default {
     });
 
     mutualGroup.on('dragend', e => {
-      console.log(e)
+      this.mutualGroupX = e.target.x();
+      this.mutualGroupY = e.target.y();
     })
 
     rectGroup.add(rectTable);
     circleGroup.add(circleTable);
 
-    // mutualGroup.add(circleGroup, rectGroup)
-    shapesLayer.add(rectGroup, circleGroup, mutualGroup);
+    var newCircleGroup = circleGroup.clone({
+      name: 'circle group new',
+      id: 'ct 2',
+      x: 250,
+      y: 250
+    })
+
+    console.log(circleGroup, 'circle');
+    console.log(newCircleGroup, 'new circle');
+
+    shapesLayer.add(rectGroup, circleGroup, mutualGroup, newCircleGroup);
     this.shapesLayer = shapesLayer;
     stage.add(shapesLayer, groupsLayer);
+
+    var scaleBy = 1.01;
+      stage.on('wheel', e => {
+        e.evt.preventDefault();
+        var oldScale = stage.scaleX();
+        console.log('scale', stage.scaleX())
+
+        var mousePointTo = {
+          x: stage.getPointerPosition().x / oldScale - stage.x() / oldScale,
+          y: stage.getPointerPosition().y / oldScale - stage.y() / oldScale
+        };
+
+        var newScale =
+          e.evt.deltaY < 0 ? oldScale * scaleBy : oldScale / scaleBy;
+        stage.scale({ x: newScale, y: newScale });
+
+        var newPos = {
+          x:
+            -(mousePointTo.x - stage.getPointerPosition().x / newScale) *
+            newScale,
+          y:
+            -(mousePointTo.y - stage.getPointerPosition().y / newScale) *
+            newScale
+        };
+        stage.position(newPos);
+        stage.batchDraw();
+      });
+
   },
   methods: {
     cancelGrouping() {
@@ -161,6 +204,8 @@ export default {
         this.shapesLayer.add(group);
         group.draggable(true);
         this.checked = false;
+        group.x(group.x() + this.mutualGroupX);
+        group.y(group.y() + this.mutualGroupY);
       });
       this.groupsList = [];
     }
